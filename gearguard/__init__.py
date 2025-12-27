@@ -1,0 +1,1 @@
+# GearGuard Django project package

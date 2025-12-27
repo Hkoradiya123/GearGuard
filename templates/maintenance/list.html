@@ -1,0 +1,824 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="maintenance-header">
+    <h1>Maintenance Records</h1>
+    <div class="maintenance-actions">
+        <form class="search-form" method="get">
+            <input type="search" name="q" placeholder="Search maintenance records..." value="{{ request.GET.q }}">
+            <button type="submit">Search</button>
+        </form>
+        <button class="add-record-btn" onclick="openAddModal()">
+            + Add Record
+        </button>
+    </div>
+</div>
+
+<div class="maintenance-grid">
+    {% for r in records %}
+    <div class="maintenance-card" onclick="openEditModal('{{ r.id }}')"
+        <div class="record-header">
+            <div class="record-date">
+                <span class="date-day">{{ r.service_date|date:"d" }}</span>
+                <span class="date-month">{{ r.service_date|date:"M" }}</span>
+            </div>
+            <div class="record-status status-{{ r.status }}">
+                {{ r.get_status_display }}
+            </div>
+        </div>
+        
+        <div class="record-body">
+            <h3 class="equipment-name" onclick="event.stopPropagation(); viewEquipment('{{ r.equipment.id }}')">{{ r.equipment }}</h3>
+            <div class="record-meta">
+                <div class="meta-item">
+                    <span class="meta-label">Technician:</span>
+                    <span class="meta-value">{{ r.technician|default:"Unassigned" }}</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Cost:</span>
+                    <span class="meta-value">${{ r.cost|default:"0" }}</span>
+                </div>
+                {% if r.next_due %}
+                <div class="meta-item">
+                    <span class="meta-label">Next Due:</span>
+                    <span class="meta-value">{{ r.next_due|date:"M d, Y" }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="record-footer">
+            <div class="record-actions">
+                <button class="action-btn view-btn" onclick="event.stopPropagation(); viewRecord('{{ r.id }}')"
+                    View Details
+                </button>
+                <button class="action-btn edit-btn" onclick="event.stopPropagation(); openEditModal('{{ r.id }}')"
+                    Edit
+                </button>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="empty-state">
+        <div class="empty-icon">🔧</div>
+        <h3>No Maintenance Records</h3>
+        <p>Start tracking your equipment maintenance to keep everything running smoothly.</p>
+        <button class="add-record-btn" onclick="openAddModal()">
+            + Add Your First Record
+        </button>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Add Record Modal -->
+<div id="addModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Add Maintenance Record</h2>
+            <button class="close-btn" onclick="closeAddModal()">&times;</button>
+        </div>
+        <form class="modal-form" method="post" action="/admin/maintenance/maintenancerecord/add/">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Equipment *</label>
+                <select name="equipment" required>
+                    <option value="">Select Equipment</option>
+                    {% for equipment in equipment_list %}
+                    <option value="{{ equipment.id }}">{{ equipment.asset_id }} - {{ equipment.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Service Date *</label>
+                    <input type="date" name="service_date" required>
+                </div>
+                <div class="form-group">
+                    <label>Status *</label>
+                    <select name="status" required>
+                        <option value="scheduled">Scheduled</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                        <option value="overdue">Overdue</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Technician</label>
+                    <input type="text" name="technician" placeholder="Enter technician name">
+                </div>
+                <div class="form-group">
+                    <label>Cost ($)</label>
+                    <input type="number" name="cost" step="0.01" placeholder="0.00">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Notes</label>
+                <textarea name="notes" rows="3" placeholder="Add any additional notes..."></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="cancel-btn" onclick="closeAddModal()">Cancel</button>
+                <button type="submit" class="submit-btn">Add Record</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Record Modal -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Edit Maintenance Record</h2>
+            <button class="close-btn" onclick="closeEditModal()">&times;</button>
+        </div>
+        <form class="modal-form" method="post" id="editForm">
+            {% csrf_token %}
+            <input type="hidden" name="id" id="editId">
+            <div class="form-group">
+                <label>Equipment *</label>
+                <select name="equipment" required id="editEquipment">
+                    <option value="">Select Equipment</option>
+                    {% for equipment in equipment_list %}
+                    <option value="{{ equipment.id }}">{{ equipment.asset_id }} - {{ equipment.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Service Date *</label>
+                    <input type="date" name="service_date" required id="editDate">
+                </div>
+                <div class="form-group">
+                    <label>Status *</label>
+                    <select name="status" required id="editStatus">
+                        <option value="scheduled">Scheduled</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                        <option value="overdue">Overdue</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Technician</label>
+                    <input type="text" name="technician" placeholder="Enter technician name" id="editTechnician">
+                </div>
+                <div class="form-group">
+                    <label>Cost ($)</label>
+                    <input type="number" name="cost" step="0.01" placeholder="0.00" id="editCost">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Notes</label>
+                <textarea name="notes" rows="3" placeholder="Add any additional notes..." id="editNotes"></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="cancel-btn" onclick="closeEditModal()">Cancel</button>
+                <button type="submit" class="submit-btn">Update Record</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Equipment Details Modal -->
+<div id="equipmentModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Equipment Details</h2>
+            <button class="close-btn" onclick="closeEquipmentModal()">&times;</button>
+        </div>
+        <div class="equipment-details" id="equipmentDetails">
+            <div class="detail-item">
+                <span class="detail-label">Asset ID:</span>
+                <span class="detail-value" id="detailAssetId">-</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Name:</span>
+                <span class="detail-value" id="detailName">-</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Category:</span>
+                <span class="detail-value" id="detailCategory">-</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Status:</span>
+                <span class="detail-value" id="detailStatus">-</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Technician:</span>
+                <span class="detail-value" id="detailTechnician">-</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Maintenance Interval:</span>
+                <span class="detail-value" id="detailInterval">-</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Description:</span>
+                <span class="detail-value" id="detailDescription">-</span>
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="button" class="cancel-btn" onclick="closeEquipmentModal()">Close</button>
+            <button type="button" class="submit-btn" onclick="editEquipment()">Edit Equipment</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.maintenance-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.maintenance-header h1 {
+    margin: 0;
+    color: var(--bar-text);
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.maintenance-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.search-form {
+    display: flex;
+    background: var(--bar-bg);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin: 0;
+}
+
+.search-form input {
+    border: none;
+    padding: 0.75rem 1rem;
+    background: transparent;
+    color: var(--bar-text);
+    font-size: 0.9rem;
+    width: 250px;
+    outline: none;
+      margin: 0;
+}
+
+.search-form input::placeholder {
+    color: var(--bar-text);
+    opacity: 0.6;
+}
+
+.search-form button {
+    border: none;
+    background: var(--bar-hover);
+    color: var(--bar-text);
+    padding: 0.625rem 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin: 0;
+    /* line-height: 1; */
+}
+
+.search-form button:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.add-record-btn {
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.add-record-btn:hover {
+    background: #059669;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.maintenance-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 0;
+}
+
+.maintenance-card {
+    background: var(--bar-bg);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+}
+
+.maintenance-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.record-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.record-date {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: var(--bar-hover);
+    padding: 0.5rem;
+    border-radius: 8px;
+    min-width: 60px;
+}
+
+.date-day {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--bar-text);
+    line-height: 1;
+}
+
+.date-month {
+    font-size: 0.75rem;
+    color: var(--bar-text);
+    opacity: 0.7;
+    text-transform: uppercase;
+}
+
+.record-status {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-scheduled {
+    background: #3b82f6;
+    color: white;
+}
+
+.status-in_progress {
+    background: #f59e0b;
+    color: white;
+}
+
+.status-completed {
+    background: #10b981;
+    color: white;
+}
+
+.status-overdue {
+    background: #ef4444;
+    color: white;
+}
+
+.record-body {
+    flex: 1;
+    margin-bottom: 1rem;
+}
+
+.equipment-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--bar-text);
+    margin: 0 0 0.75rem 0;
+    line-height: 1.3;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.equipment-name:hover {
+    color: #4f46e5;
+}
+
+.record-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.meta-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+}
+
+.meta-label {
+    font-size: 0.8rem;
+    color: var(--bar-text);
+    opacity: 0.7;
+}
+
+.meta-value {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--bar-text);
+}
+
+.record-footer {
+    margin-top: auto;
+}
+
+.record-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.action-btn {
+    flex: 1;
+    border: none;
+    padding: 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.view-btn {
+    background: var(--bar-hover);
+    color: var(--bar-text);
+}
+
+.view-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.edit-btn {
+    background: #4f46e5;
+    color: white;
+}
+
+.edit-btn:hover {
+    background: #4338ca;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    backdrop-filter: blur(8px);
+    padding: 1rem;
+    box-sizing: border-box;
+}
+
+.modal-content {
+    background: var(--bar-bg);
+    border-radius: 16px;
+    padding: 1.5rem;
+    max-width: 480px;
+    width: calc(100% - 2rem);
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+    margin: 2rem auto;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    position: relative;
+    animation: modalSlideIn 0.3s ease-out;
+    box-sizing: border-box;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.modal-header h2 {
+    margin: 0;
+    color: var(--bar-text);
+    font-size: 1.5rem;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: var(--bar-text);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.modal-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-group label {
+    font-weight: 600;
+    color: var(--bar-text);
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.875rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--bar-text);
+    font-size: 0.9rem;
+    outline: none;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cancel-btn {
+    background: var(--bar-hover);
+    color: var(--bar-text);
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.submit-btn {
+    background: #4f46e5;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.submit-btn:hover {
+    background: #4338ca;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem 2rem;
+    background: var(--bar-bg);
+    border-radius: 16px;
+    border: 2px dashed rgba(255, 255, 255, 0.2);
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state h3 {
+    margin: 0 0 1rem 0;
+    color: var(--bar-text);
+    font-size: 1.5rem;
+}
+
+.empty-state p {
+    color: var(--bar-text);
+    opacity: 0.7;
+    margin-bottom: 2rem;
+    line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+    .maintenance-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .maintenance-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .search-form {
+        width: 100%;
+    }
+    
+    .search-form input {
+        flex: 1;
+        width: auto;
+    }
+    
+    .maintenance-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .maintenance-card {
+        padding: 1rem;
+    }
+    
+    .record-actions {
+        flex-direction: column;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .modal-content {
+        margin: 1rem 0.5rem;
+        padding: 1rem;
+        max-width: calc(100% - 1rem);
+        max-height: calc(100vh - 2rem);
+    }
+    
+    .modal {
+        padding: 0.5rem;
+    }
+    
+    .equipment-details {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .detail-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .detail-label {
+        font-weight: 600;
+        color: var(--bar-text);
+        opacity: 0.8;
+        font-size: 0.9rem;
+    }
+    
+    .detail-value {
+        color: var(--bar-text);
+        font-weight: 500;
+        font-size: 0.9rem;
+        text-align: right;
+        flex: 1;
+        margin-left: 1rem;
+    }
+}
+</style>
+
+<script>
+function openAddModal() {
+    document.getElementById('addModal').style.display = 'block';
+}
+
+function closeAddModal() {
+    document.getElementById('addModal').style.display = 'none';
+}
+
+function openEditModal(recordId) {
+    // Fetch record data and populate form
+    fetch(`/api/maintenance-record/${recordId}/`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('editId').value = data.id;
+            document.getElementById('editEquipment').value = data.equipment;
+            document.getElementById('editDate').value = data.service_date;
+            document.getElementById('editStatus').value = data.status;
+            document.getElementById('editTechnician').value = data.technician || '';
+            document.getElementById('editCost').value = data.cost || '';
+            document.getElementById('editNotes').value = data.notes || '';
+            document.getElementById('editModal').style.display = 'block';
+        })
+        .catch(error => {
+            console.error('Error fetching record:', error);
+            // Fallback - just show modal with ID
+            document.getElementById('editId').value = recordId;
+            document.getElementById('editModal').style.display = 'block';
+        });
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').style.display = 'none';
+}
+
+function viewRecord(recordId) {
+    window.location.href = `/maintenance/${recordId}/`;
+}
+
+function viewEquipment(equipmentId) {
+    // Fetch equipment details and show modal
+    fetch(`/api/equipment/${equipmentId}/`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('detailAssetId').textContent = data.asset_id;
+            document.getElementById('detailName').textContent = data.name;
+            document.getElementById('detailCategory').textContent = data.category?.name || 'N/A';
+            document.getElementById('detailStatus').textContent = data.get_status_display;
+            document.getElementById('detailTechnician').textContent = data.technician || 'N/A';
+            document.getElementById('detailInterval').textContent = `${data.maintenance_interval_days} days`;
+            document.getElementById('detailDescription').textContent = data.description || 'N/A';
+            document.getElementById('equipmentModal').style.display = 'block';
+        })
+        .catch(error => {
+            console.error('Error fetching equipment:', error);
+        });
+}
+
+function closeEquipmentModal() {
+    document.getElementById('equipmentModal').style.display = 'none';
+}
+
+function editEquipment() {
+    // Navigate to equipment edit page
+    window.location.href = '/admin/equipment/equipment/';
+}
+
+// Close modals when clicking outside
+window.onclick = function(event) {
+    if (event.target.className === 'modal') {
+        closeAddModal();
+        closeEditModal();
+        closeEquipmentModal();
+    }
+}
+</script>
+{% endblock %}

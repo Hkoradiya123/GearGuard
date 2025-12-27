@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% block content %}
+<header class="grid">
+    <h1>Dashboard</h1>
+    <form action="/maintenance/" method="get" style="margin-left:auto;">
+        <input type="search" name="q" placeholder="Search…" />
+    </form>
+
+</header>
+
+
+<section class="grid">
+  <article style="border: none; border-radius: 0 20px 0 20px; background: linear-gradient(135deg, rgba(225, 29, 72, 0.1) 0%, rgba(225, 29, 72, 0.05) 100%); border-left: 6px solid #e11d48;">
+    <header>Critical Equipment <small class="secondary">health &lt; 30% / inactive</small></header>
+    <h2 style="margin:0">{{ critical_equipment }}</h2>
+    <footer><a href="/equipment/" class="secondary">Review</a></footer>
+  </article>
+
+  <article style="border: none; border-radius: 0 20px 0 20px; background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(37, 99, 235, 0.05) 100%); border-left: 6px solid #2563eb;">
+    <header>Total Equipment</header>
+    <h2 style="margin:0">{{ total_equipment }}</h2>
+    <footer><a href="/equipment/">Open list</a></footer>
+  </article>
+
+  <article style="border: none; border-radius: 0 20px 0 20px; background: linear-gradient(135deg, rgba(22, 163, 74, 0.1) 0%, rgba(22, 163, 74, 0.05) 100%); border-left: 6px solid #16a34a;">
+    <header>Open Requests</header>
+    <h2 style="margin:0">{{ open_requests }}</h2>
+    <footer><a href="/equipment/" class="secondary"><strong class="secondary">{{ overdue_requests }}</strong> overdue</a></footer>
+  </article>
+
+  <article style="border: none; border-radius: 0 20px 0 20px; background: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(124, 58, 237, 0.05) 100%); border-left: 6px solid #7c3aed;">
+    <header>New Notifications</header>
+    <h2 style="margin:0">{{ new_notifications }}</h2>
+    <footer><a href="/notifications/">View alerts</a></footer>
+  </article>
+</section>
+
+<section class="grid">
+    <article>
+        <header>
+            <strong>Due Soon</strong>
+            <small class="secondary">next 14 days</small>
+        </header>
+        <table>
+            <thead>
+                <tr>
+                    <th>Equipment</th>
+                    <th>Next Due</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in due_soon %}
+                <tr>
+                    <td>{{ r.equipment }}</td>
+                    <td>{{ r.next_due }}</td>
+                    <td>
+                        {% if r.status == 'overdue' %}
+                        <span class="contrast">Overdue</span>
+                        {% else %}
+                        <span>Scheduled</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3">Nothing due in the next two weeks.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </article>
+
+    <article>
+        <header><strong>Recent Maintenance</strong></header>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Equipment</th>
+                    <th>Technician</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in recent_records %}
+                <tr>
+                    <td>{{ r.service_date }}</td>
+                    <td>{{ r.equipment }}</td>
+                    <td>{{ r.technician|default:'—' }}</td>
+                    <td>{{ r.get_status_display }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4">No recent activity.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </article>
+</section>
+{% endblock %}

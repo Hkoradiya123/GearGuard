@@ -1,0 +1,359 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="equipment-header">
+    <h1>Equipment</h1>
+    <div class="equipment-actions">
+        <form class="search-form" method="get">
+            <input type="search" name="q" placeholder="Search equipment..." value="{{ request.GET.q }}">
+            <button type="submit">Search</button>
+        </form>
+        <button class="add-equipment-btn" onclick="window.location.href='/equipment/add/'">
+            + Add Equipment
+        </button>
+    </div>
+</div>
+
+<div class="equipment-grid">
+    {% for e in items %}
+    <div class="equipment-card" onclick="window.location.href='{{ e.id }}/'">
+        <div class="equipment-header">
+            <div class="equipment-id">{{ e.asset_id }}</div>
+            <div class="equipment-status status-{{ e.status }}">
+                {{ e.get_status_display }}
+            </div>
+        </div>
+        <div class="equipment-body">
+            <h3 class="equipment-name">{{ e.name }}</h3>
+            <div class="equipment-category">
+                <span class="category-icon">📦</span>
+                {{ e.category }}
+            </div>
+            <div class="equipment-meta">
+                <div class="meta-item">
+                    <span class="meta-label">Status:</span>
+                    <span class="meta-value">{{ e.get_status_display }}</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Category:</span>
+                    <span class="meta-value">{{ e.category }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="equipment-footer">
+            <div class="equipment-actions">
+                <button class="action-btn view-btn" onclick="event.stopPropagation(); window.location.href='{{ e.id }}/'">
+                    View Details
+                </button>
+                <button class="action-btn edit-btn" onclick="event.stopPropagation(); window.location.href='/admin/equipment/equipment/{{ e.id }}/change/'">
+                    Edit
+                </button>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="empty-state">
+        <div class="empty-icon">📦</div>
+        <h3>No Equipment Found</h3>
+        <p>Start by adding your first piece of equipment to track maintenance schedules.</p>
+        <button class="add-equipment-btn" onclick="window.location.href='/admin/equipment/equipment/add/'">
+            + Add Your First Equipment
+        </button>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+.equipment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.equipment-header h1 {
+    margin: 0;
+    color: var(--bar-text);
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.equipment-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.search-form {
+    display: flex;
+    background: var(--bar-bg);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.search-form input {
+    border: none;
+    padding: 0.75rem 1rem;
+    background: transparent;
+    color: var(--bar-text);
+    font-size: 0.9rem;
+    width: 250px;
+    outline: none;
+}
+
+.search-form input::placeholder {
+    color: var(--bar-text);
+    opacity: 0.6;
+}
+
+.search-form button {
+    border: none;
+    background: var(--bar-hover);
+    color: var(--bar-text);
+    padding: 0.75rem 1.25rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.search-form button:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.add-equipment-btn {
+    background: #4f46e5;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.add-equipment-btn:hover {
+    background: #4338ca;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+.equipment-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.equipment-card {
+    background: var(--bar-bg);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+}
+
+.equipment-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.equipment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.equipment-id {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--bar-text);
+    font-family: 'Courier New', monospace;
+}
+
+.equipment-status {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-active {
+    background: #10b981;
+    color: white;
+}
+
+.status-inactive {
+    background: #6b7280;
+    color: white;
+}
+
+.status-maintenance {
+    background: #f59e0b;
+    color: white;
+}
+
+.equipment-body {
+    flex: 1;
+    margin-bottom: 1rem;
+}
+
+.equipment-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--bar-text);
+    margin: 0 0 0.75rem 0;
+    line-height: 1.3;
+}
+
+.equipment-category {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    color: var(--bar-text);
+    opacity: 0.8;
+}
+
+.category-icon {
+    font-size: 1.2rem;
+}
+
+.equipment-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.meta-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+}
+
+.meta-label {
+    font-size: 0.8rem;
+    color: var(--bar-text);
+    opacity: 0.7;
+}
+
+.meta-value {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--bar-text);
+}
+
+.equipment-footer {
+    margin-top: auto;
+}
+
+.equipment-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.action-btn {
+    flex: 1;
+    border: none;
+    padding: 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.view-btn {
+    background: var(--bar-hover);
+    color: var(--bar-text);
+}
+
+.view-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.edit-btn {
+    background: #4f46e5;
+    color: white;
+}
+
+.edit-btn:hover {
+    background: #4338ca;
+}
+
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem 2rem;
+    background: var(--bar-bg);
+    border-radius: 16px;
+    border: 2px dashed rgba(255, 255, 255, 0.2);
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state h3 {
+    margin: 0 0 1rem 0;
+    color: var(--bar-text);
+    font-size: 1.5rem;
+}
+
+.empty-state p {
+    color: var(--bar-text);
+    opacity: 0.7;
+    margin-bottom: 2rem;
+    line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+    .equipment-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .equipment-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .search-form {
+        width: 100%;
+    }
+    
+    .search-form input {
+        flex: 1;
+        width: auto;
+    }
+    
+    .equipment-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .equipment-card {
+        padding: 1rem;
+    }
+    
+    .equipment-actions {
+        flex-direction: column;
+    }
+}
+</style>
+{% endblock %}

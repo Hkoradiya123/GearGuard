@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>{{ item.asset_id }} — {{ item.name }}</h2>
+<p><strong>Category:</strong> {{ item.category }}</p>
+<p><strong>Status:</strong> {{ item.get_status_display }}</p>
+<p><strong>Assigned:</strong> {{ item.assigned_date }}</p>
+<p><strong>Interval (days):</strong> {{ item.maintenance_interval_days }}</p>
+<p>{{ item.description }}</p>
+<a href="/maintenance/">View maintenance records</a>
+{% endblock %}

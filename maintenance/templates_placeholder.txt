@@ -1,0 +1,1 @@
+This file exists only to ensure the templates directory is created by the file writer tool.
