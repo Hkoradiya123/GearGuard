@@ -11,23 +11,51 @@
 
     <style>
         :root {
-            --bar-bg: #1a1a1a;
-            --bar-text: #f5f5f5;
-            --bar-hover: #2d2d2d;
-            --bar-radius: 8px;
-            --bar-shadow: 0 4px 6px rgba(0, 0, 0, .2);
-        }
+    /* Core Backgrounds */
+    --bar-bg: #0F172A;              /* Main dark background */
+    --pico-background-color: #000000;
 
+    /* Cards & Containers */
+    --bar-hover: #1E293B;
+    --bar-radius: 10px;
+    --bar-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+
+    /* Text */
+    --bar-text: #E5E7EB;
+    --text-muted: #9CA3AF;
+
+    /* Accent Colors */
+    --primary: #4F46E5;             /* Blue */
+    --success: #10B981;             /* Green */
+    --warning: #F59E0B;             /* Yellow */
+    --danger: #EF4444;              /* Red */
+
+    /* Borders */
+    --border-soft: rgba(255, 255, 255, 0.08);
+}
+
+        
         [data-theme="light"] {
-            --bar-bg: #f5f7ee;
-            --bar-text: #1f2937;
-            --bar-hover: #e7eadb;
-            --bar-shadow: 0 2px 8px rgba(0, 0, 0, .1);
-        }
+    --bar-bg: #FFFFFF;
+    --pico-background-color: #aeafb1;
 
-        body {
-            margin: 0;
-        }
+    --bar-hover: #EEF2FF;
+    --bar-radius: 10px;
+    --bar-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+
+    --bar-text: #1F2937;
+    --text-muted: #6B7280;
+
+    --primary: #4F46E5;
+    --success: #10B981;
+    --warning: #F59E0B;
+    --danger: #EF4444;
+
+    --border-soft: #E5E7EB;
+}
+
+
+
 
         .topbar-wrap {
     position: fixed;
@@ -66,6 +94,7 @@
 
         .topbar-wrap {
             background: rgba(26, 26, 26, 0.75);
+            transition: background-color 0.5s ease, border-color 0.3s ease;
         }
 
         [data-theme="light"] .topbar-wrap {
@@ -86,7 +115,8 @@
             display: flex;
             gap: 18px;
             white-space: nowrap;
-            flex: 1;
+            
+            flex: .5;
             /* 🔥 important */
         }
 
@@ -166,7 +196,10 @@
             border-color: rgba(0, 0, 0, 0.3);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
-
+        /* Smooth transitions for all theme-related elements */
+* {
+    transition: background-color 0.5s ease, color 0.3s ease, border-color 0.3s ease;
+}
         @media (max-width: 900px) {
             .menu {
                 display: none;
@@ -194,7 +227,7 @@
                 <a href="/equipment/" class="{% if request.path == '/equipment/' %}active{% endif %}">Equipment</a>
                 <a href="/notifications/"
                     class="{% if request.path == '/notifications/' %}active{% endif %}">Reporting</a>
-                <a href="/admin/" class="{% if '/admin/' in request.path %}active{% endif %}">Admin</a>
+                <!-- <a href="/admin/" class="{% if '/admin/' in request.path %}active{% endif %}">Admin</a> -->
             </nav>
 
             <div class="actions">
