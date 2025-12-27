@@ -1,3 +1,6 @@
 Django==5.0.6
-psycopg[binary]==3.2.1
-pytz==2024.1
+psycopg[binary]
+pytz
+gunicorn==21.2.0
+dj-database-url==2.1.0
+whitenoise==6.6.0
