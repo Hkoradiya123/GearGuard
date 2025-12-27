@@ -31,21 +31,27 @@ def add_equipment(request):
         )
         
         # Create equipment
-        equipment = Equipment.objects.create(
+        equipment, created = Equipment.objects.get_or_create(
             asset_id=request.POST.get('asset_id'),
-            name=request.POST.get('name'),
-            category=category,
-            company=request.POST.get('company', ''),
-            serial_no=request.POST.get('serial_no', ''),
-            technician=request.POST.get('technician', ''),
-            maintenance_team=request.POST.get('maintenance_team', ''),
-            maintenance_interval_days=int(request.POST.get('maintenance_interval_days', 90)),
-            status=request.POST.get('status', 'active'),
-            description=request.POST.get('description', '')
+            defaults={
+                'name': request.POST.get('name'),
+                'category': category,
+                'company': request.POST.get('company', ''),
+                'serial_no': request.POST.get('serial_no', ''),
+                'technician': request.POST.get('technician', ''),
+                'maintenance_team': request.POST.get('maintenance_team', ''),
+                'maintenance_interval_days': int(request.POST.get('maintenance_interval_days', 90)),
+                'status': request.POST.get('status', 'active'),
+                'description': request.POST.get('description', '')
+            }
         )
         
-        messages.success(request, f'Equipment "{equipment.asset_id}" added successfully!')
-        return redirect('equipment_list')
+        if created:
+            messages.success(request, f'Equipment "{equipment.asset_id}" added successfully!')
+        else:
+            messages.info(request, f'Equipment "{equipment.asset_id}" already exists and was updated.')
+        
+        return redirect('equipment:list')
     
     categories = EquipmentCategory.objects.all()
     return render(request, 'equipment/add.html', {'categories': categories})

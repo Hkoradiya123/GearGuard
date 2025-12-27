@@ -7,9 +7,9 @@
             <input type="search" name="q" placeholder="Search maintenance records..." value="{{ request.GET.q }}">
             <button type="submit">Search</button>
         </form>
-        <button class="add-record-btn" onclick="openAddModal()">
+        <a href="/maintenance/add/" class="add-record-btn">
             + Add Record
-        </button>
+        </a>
     </div>
 </div>
 
@@ -49,10 +49,21 @@
         <div class="record-footer">
             <div class="record-actions">
                 <button class="action-btn view-btn" onclick="event.stopPropagation(); viewRecord('{{ r.id }}')"
-                    View Details
+                    title="View full details of this maintenance record"
+                    <span class="btn-icon">👁</span>
+                    <span class="btn-text">View</span>
                 </button>
+                {% if r.status != 'completed' %}
+                <button class="action-btn complete-btn" onclick="event.stopPropagation(); markCompleted('{{ r.id }}')"
+                    title="Mark this maintenance record as completed"
+                    <span class="btn-icon">✓</span>
+                    <span class="btn-text">Complete</span>
+                </button>
+                {% endif %}
                 <button class="action-btn edit-btn" onclick="event.stopPropagation(); openEditModal('{{ r.id }}')"
-                    Edit
+                    title="Edit this maintenance record"
+                    <span class="btn-icon">✏</span>
+                    <span class="btn-text">Edit</span>
                 </button>
             </div>
         </div>
@@ -62,9 +73,9 @@
         <div class="empty-icon">🔧</div>
         <h3>No Maintenance Records</h3>
         <p>Start tracking your equipment maintenance to keep everything running smoothly.</p>
-        <button class="add-record-btn" onclick="openAddModal()">
+        <a href="/maintenance/add/" class="add-record-btn">
             + Add Your First Record
-        </button>
+        </a>
     </div>
     {% endfor %}
 </div>
@@ -456,6 +467,21 @@
     font-size: 0.85rem;
     font-weight: 500;
     transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+}
+
+.btn-icon {
+    font-size: 0.9rem;
+    line-height: 1;
+}
+
+.btn-text {
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
 }
 
 .view-btn {
@@ -474,6 +500,15 @@
 
 .edit-btn:hover {
     background: #4338ca;
+}
+
+.complete-btn {
+    background: #10b981;
+    color: white;
+}
+
+.complete-btn:hover {
+    background: #059669;
 }
 
 .modal {
@@ -765,7 +800,7 @@ function openEditModal(recordId) {
             document.getElementById('editStatus').value = data.status;
             document.getElementById('editTechnician').value = data.technician || '';
             document.getElementById('editCost').value = data.cost || '';
-            document.getElementById('editNotes').value = data.notes || '';
+            document.getElementById('editNotes').value = data.remarks || '';
             document.getElementById('editModal').style.display = 'block';
         })
         .catch(error => {
@@ -810,6 +845,24 @@ function closeEquipmentModal() {
 function editEquipment() {
     // Navigate to equipment edit page
     window.location.href = '/admin/equipment/equipment/';
+}
+
+function markCompleted(recordId) {
+    if (confirm('Mark this maintenance record as completed?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/maintenance/update-status/';
+        
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        form.innerHTML = `
+            <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+            <input type="hidden" name="record_id" value="${recordId}">
+            <input type="hidden" name="status" value="completed">
+        `;
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
 }
 
 // Close modals when clicking outside

@@ -1,0 +1,404 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="maintenance-header">
+    <h1>Maintenance Record Details</h1>
+    <div class="maintenance-actions">
+        <button class="back-btn" onclick="window.location.href='/maintenance/'">
+            ← Back to Maintenance
+        </button>
+    </div>
+</div>
+
+<div class="detail-container">
+    <div class="detail-card">
+        <div class="detail-header">
+            <div class="detail-title">
+                <h2>{{ record.equipment.asset_id }} - {{ record.equipment.name|default:"Unknown Equipment" }}</h2>
+                <div class="detail-status status-{{ record.status }}">
+                    {{ record.get_status_display }}
+                </div>
+            </div>
+        </div>
+        
+        <div class="detail-body">
+            <div class="detail-section">
+                <h3>Service Information</h3>
+                <div class="detail-grid">
+                    <div class="detail-item date-field">
+                        <span class="detail-label">Service Date:</span>
+                        <span class="detail-value">{{ record.service_date|date:"F d, Y" }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Technician:</span>
+                        <span class="detail-value">{{ record.technician|default:"Unassigned" }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Cost:</span>
+                        <span class="detail-value">${{ record.cost|default:"0.00" }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Status:</span>
+                        <span class="detail-value">
+                            <span class="status-badge status-{{ record.status }}">
+                                {{ record.get_status_display }}
+                            </span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="detail-section">
+                <h3>Equipment Information</h3>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">Equipment:</span>
+                        <span class="detail-value">{{ record.equipment.asset_id }} - {{ record.equipment.name|default:"Unknown Equipment" }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Category:</span>
+                        <span class="detail-value">{{ record.equipment.category|default:"N/A" }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Maintenance Interval:</span>
+                        <span class="detail-value">{{ record.equipment.maintenance_interval_days }} days</span>
+                    </div>
+                    {% if record.next_due %}
+                    <div class="detail-item">
+                        <span class="detail-label">Next Due:</span>
+                        <span class="detail-value">{{ record.next_due|date:"F d, Y" }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if record.remarks %}
+            <div class="detail-section">
+                <h3>Notes</h3>
+                <div class="notes-content">
+                    {{ record.remarks|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="detail-actions">
+            <button class="action-btn edit-btn" onclick="window.location.href='/maintenance/{{ record.id }}/edit/'">
+                ✏ Edit Record
+            </button>
+            {% if record.status != 'completed' %}
+            <button class="action-btn complete-btn" onclick="markCompleted('{{ record.id }}')">
+                ✓ Mark Complete
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.maintenance-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.maintenance-header h1 {
+    margin: 0;
+    color: var(--bar-text);
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.maintenance-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.back-btn {
+    background: var(--bar-hover);
+    color: var(--bar-text);
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
+}
+
+.detail-container {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.detail-card {
+    background: var(--bar-bg);
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.detail-header {
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.detail-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.detail-title h2 {
+    margin: 0;
+    color: var(--bar-text);
+    font-size: 1.25rem;
+    font-weight: 700;
+    flex: 1;
+    line-height: 1.3;
+    word-break: break-word;
+}
+
+.detail-status {
+    padding: 0.375rem 0.75rem;
+    border-radius: 16px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-scheduled {
+    background: #3b82f6;
+    color: white;
+}
+
+.status-in_progress {
+    background: #f59e0b;
+    color: white;
+}
+
+.status-completed {
+    background: #10b981;
+    color: white;
+}
+
+.status-overdue {
+    background: #ef4444;
+    color: white;
+}
+
+.detail-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.detail-section {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.detail-section h3 {
+    margin: 0 0 0.75rem 0;
+    color: var(--bar-text);
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem;
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.detail-item.date-field {
+    background: var(--bar-hover);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.detail-label {
+    font-weight: 600;
+    color: var(--bar-text);
+    opacity: 0.8;
+    font-size: 0.85rem;
+}
+
+.detail-value {
+    color: var(--bar-text);
+    font-weight: 500;
+    font-size: 0.85rem;
+    text-align: right;
+    flex: 1;
+    margin-left: 0.75rem;
+}
+
+.status-badge {
+    padding: 0.2rem 0.5rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.notes-content {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    padding: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    line-height: 1.5;
+    color: var(--bar-text);
+    font-size: 0.9rem;
+}
+
+.detail-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.action-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.9rem;
+}
+
+.edit-btn {
+    background: #4f46e5;
+    color: white;
+}
+
+.edit-btn:hover {
+    background: #4338ca;
+    transform: translateY(-1px);
+}
+
+.complete-btn {
+    background: #10b981;
+    color: white;
+}
+
+.complete-btn:hover {
+    background: #059669;
+    transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+    .maintenance-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+    
+    .detail-container {
+        margin: 0.75rem;
+    }
+    
+    .detail-card {
+        padding: 1rem;
+        border-radius: 8px;
+    }
+    
+    .detail-title {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .detail-title h2 {
+        font-size: 1.1rem;
+    }
+    
+    .detail-body {
+        gap: 1rem;
+    }
+    
+    .detail-section {
+        padding: 0.75rem;
+    }
+    
+    .detail-section h3 {
+        font-size: 0.95rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .detail-grid {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+    
+    .detail-item {
+        padding: 0.5rem;
+    }
+    
+    .detail-label,
+    .detail-value {
+        font-size: 0.8rem;
+    }
+    
+    .detail-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .action-btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+    }
+}
+</style>
+
+<script>
+function markCompleted(recordId) {
+    if (confirm('Mark this maintenance record as completed?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/maintenance/update-status/';
+        
+        // Get CSRF token from meta tag or create one
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                          document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        
+        form.innerHTML = `
+            <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+            <input type="hidden" name="record_id" value="${recordId}">
+            <input type="hidden" name="status" value="completed">
+        `;
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}
