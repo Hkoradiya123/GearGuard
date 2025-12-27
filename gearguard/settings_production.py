@@ -10,6 +10,7 @@ ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
 
 # Database (Production PostgreSQL)
 import dj_database_url
+
 if DEBUG:
     DATABASES = {
         'default': {
@@ -18,9 +19,19 @@ if DEBUG:
         }
     }
 else:
-    DATABASES = {
-        'default': dj_database_url.parse(os.environ.get('DATABASE_URL'))
-    }
+    database_url = os.environ.get('DATABASE_URL')
+    if database_url:
+        DATABASES = {
+            'default': dj_database_url.parse(database_url)
+        }
+    else:
+        # Fallback to SQLite if DATABASE_URL is not set
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
 
 # Security Settings
 SECURE_BROWSER_XSS_FILTER = True
